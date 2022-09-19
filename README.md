@@ -1,1 +1,1 @@
-# helm-testing
+# helm-testing. Chart testing
