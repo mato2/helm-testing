@@ -54,9 +54,9 @@ jobs:
           with:
             fetch-depth: 0
         - name: Setup Node.js
-          uses: actions/setup-node@v2
+          uses: actions/setup-node@v3
           with:
-            node-version: 'lts/*'
+            node-version: 16
         - name: Install Node Dependencies
           run: npm ci
         - name: Release
