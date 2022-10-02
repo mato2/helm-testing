@@ -94,7 +94,6 @@ jobs:
             echo "::set-output name=changed_charts::$charts"
           fi
       - name: changed charts
-        run: ls -la
         if: steps.list-changed.outputs.changed == 'true'
       - name: Run chart-testing (lint)
         run: ct lint --debug --config ./.github/configs/ct-lint.yaml --lint-conf ./.github/configs/lintconf.yaml
