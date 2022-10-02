@@ -87,7 +87,7 @@ jobs:
         if: steps.list-changed.outputs.changed == 'true'
 
       - name: Run chart-testing (install)
-        run: ct install --dry-run --debug --config ./.github/configs/ct-lint.yaml
+        run: ct install --debug --config ./.github/configs/ct-lint.yaml
         if: steps.list-changed.outputs.changed == 'true'
 
   package:
