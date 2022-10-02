@@ -92,7 +92,7 @@ jobs:
 
   package:
     needs:
-      - lint
+      - chart-test
     if: github.event.action == 'closed' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
