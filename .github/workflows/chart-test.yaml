@@ -99,13 +99,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: 'repo'
-      # - name: specify branch
-      #   if: github.event.action != 'closed'
-      #   run: |
-      #     branch_name="${GITHUB_REF_NAME}-repo"
-      #     git fetch origin "$branch_name" || true
-      #     git checkout "$branch_name" || git checkout -b "$branch_name"
-      #     echo "branch_name=$branch_name" >> "$GITHUB_ENV"
+      - name: specify branch
+        if: github.event.action != 'closed'
+        run: |
+          branch_name="${GITHUB_REF_NAME}-repo"
+          git fetch origin "$branch_name" || true
+          git checkout "$branch_name" || git checkout -b "$branch_name"
+          echo "branch_name=$branch_name" >> "$GITHUB_ENV"
       - name: Download workflow artifacts
         id: artifacts
         uses: actions/download-artifact@v3
