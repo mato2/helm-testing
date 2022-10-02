@@ -93,7 +93,9 @@ jobs:
             echo "::set-output name=changed::true"
             echo "::set-output name=changed_charts::$charts"
           fi
-
+      - name: changed charts
+        run: ls -la
+        if: steps.list-changed.outputs.changed == 'true'
       - name: Run chart-testing (lint)
         run: ct lint --debug --config ./.github/configs/ct-lint.yaml --lint-conf ./.github/configs/lintconf.yaml
 
@@ -101,9 +103,7 @@ jobs:
         uses: helm/kind-action@v1.2.0
         if: steps.list-changed.outputs.changed == 'true'
 
-      - name: changed charts
-        run: ls -la
-        if: steps.list-changed.outputs.changed == 'true'
+
 
       - name: Run chart-testing (install)
         run: ct install --debug --config ./.github/configs/ct-lint.yaml
