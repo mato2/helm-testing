@@ -1,84 +1,114 @@
----
-name: Lint & Package Helm charts
+
+name: Update Index
+
 on:
   push:
-    branches:
-      - '*'
-      - '!main'
-      - '!repo'
-  pull_request:
-    types: ['opened', 'synchronize', 'closed']
-    branches:
-      - main
+    branches: [ main ]
+    paths:
+      - '**.tgz'
 
-env:
-  package: github.event.action == 'closed' || github.event_name == 'push'
-  DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
 jobs:
-  lint:
-    name: Lint helm charts
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-       
-      - uses: azure/setup-helm@v3
+      - name: Git Checkout
+        uses: actions/checkout@v2
+      - name: Helm Installation
+        uses: azure/setup-helm@v1.1
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
-
-      - name: Lint Charts
+          version: v3.7.0
+      - name: Update Index
         run: |
-          helm lint charts/*
-      - name: Upload Artifact
-        if: env.package
-        id: upload
-        uses: actions/upload-artifact@v3
-        with:
-          name: charts
-          path: charts
-          retention-days: 1
-          if-no-files-found: error
-
-  package:
-    needs:
-      - lint
-    if: github.event.action == 'closed' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: 'repo'
-      - name: specify branch
-        if: github.event.action != 'closed'
-        run: |
-          branch_name="${GITHUB_REF_NAME}-repo"
-          git fetch origin "$branch_name" || true
-          git checkout "$branch_name" || git checkout -b "$branch_name"
-          echo "branch_name=$branch_name" >> "$GITHUB_ENV"
-      - name: Download workflow artifacts
-        id: artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: charts
-          path: charts
-      - uses: azure/setup-helm@v3
-        with:
-          token: ${{secrets.GITHUB_TOKEN}}
-      - name: Sync Helm Repo
-        run: |
-          helm package charts/*
           helm repo index .
-          rm -rf charts
-      - name: Push helm packages to Repo
-        run: |
+          git config --global user.email "yourbot@yourorg.com"
+          git config --global user.name "YourOrg Bot"
+          git add index.yaml
+          git commit -m "Update chart index"
+          git push
 
-          git config user.email "devops@caregility"
-          git config user.name "caregility-devops"
-          git add -A
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update repo" -m "${{ github.event.head_commit.message }}"
-          [[ "$DEBUG" == true ]] && git diff origin/repo
-          [[ -n "$branch_name" ]] && upstream="--set-upstream origin $branch_name"
-          # shellcheck disable=SC2046 # Intended splitting of string
-          git push $upstream
+
+
+# ---
+# name: Lint & Package Helm charts
+# on:
+#   push:
+#     branches:
+#       - '*'
+#       - '!main'
+#       - '!repo'
+#   pull_request:
+#     types: ['opened', 'synchronize', 'closed']
+#     branches:
+#       - main
+
+# env:
+#   package: github.event.action == 'closed' || github.event_name == 'push'
+#   DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+# jobs:
+#   lint:
+#     name: Lint helm charts
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+       
+#       - uses: azure/setup-helm@v3
+#         with:
+#           token: ${{secrets.GITHUB_TOKEN}}
+
+#       - name: Lint Charts
+#         run: |
+#           helm lint charts/*
+#       - name: Upload Artifact
+#         if: env.package
+#         id: upload
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: charts
+#           path: charts
+#           retention-days: 1
+#           if-no-files-found: error
+
+#   package:
+#     needs:
+#       - lint
+#     if: github.event.action == 'closed' || github.event_name == 'push'
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#         with:
+#           ref: 'repo'
+#       - name: specify branch
+#         if: github.event.action != 'closed'
+#         run: |
+#           branch_name="${GITHUB_REF_NAME}-repo"
+#           git fetch origin "$branch_name" || true
+#           git checkout "$branch_name" || git checkout -b "$branch_name"
+#           echo "branch_name=$branch_name" >> "$GITHUB_ENV"
+#       - name: Download workflow artifacts
+#         id: artifacts
+#         uses: actions/download-artifact@v3
+#         with:
+#           name: charts
+#           path: charts
+#       - uses: azure/setup-helm@v3
+#         with:
+#           token: ${{secrets.GITHUB_TOKEN}}
+#       - name: Sync Helm Repo
+#         run: |
+#           helm package charts/*
+#           helm repo index .
+#           rm -rf charts
+#       - name: Push helm packages to Repo
+#         run: |
+
+#           git config user.email "devops@caregility"
+#           git config user.name "caregility-devops"
+#           git add -A
+#           git diff --quiet && git diff --staged --quiet || git commit -m "Update repo" -m "${{ github.event.head_commit.message }}"
+#           [[ "$DEBUG" == true ]] && git diff origin/repo
+#           [[ -n "$branch_name" ]] && upstream="--set-upstream origin $branch_name"
+#           # shellcheck disable=SC2046 # Intended splitting of string
+#           git push $upstream
 
 
   # chart-test:
