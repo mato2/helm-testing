@@ -102,7 +102,7 @@ jobs:
       - name: specify branch
         if: github.event.action != 'closed'
         run: |
-          branch_name="${GITHUB_REF_NAME}-repo"
+          branch_name="${GITHUB_REF_NAME}"
           git fetch origin "$branch_name" || true
           git checkout "$branch_name" || git checkout -b "$branch_name"
           echo "branch_name=$branch_name" >> "$GITHUB_ENV"
