@@ -61,11 +61,6 @@ jobs:
           run: npm install semantic-release
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-        - name: Install helm-release
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          run: npm install semantic-release-helm3 -D
   chart-test:
     runs-on: ubuntu-latest
     steps:
