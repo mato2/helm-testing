@@ -57,8 +57,6 @@ jobs:
           uses: actions/setup-node@v3
           with:
             node-version: 16
-        - name: Install Node Dependencies
-          run: npm ci
         - name: Release
           run: npx semantic-release
           env:
