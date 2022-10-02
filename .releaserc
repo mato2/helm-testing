@@ -1,0 +1,18 @@
+{
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/github",
+    [
+        "@brpaz/semantic-release-helm",
+        {
+          "chartPath": "charts",
+          "chartRepository": {
+            "branch": "repo",
+            "url": "https://github.com/mato2/helm-testing",
+            "repository": "mato2/helm-testing"
+          }
+        }
+      ]
+  ]
+}
