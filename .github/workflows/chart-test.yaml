@@ -1,74 +1,156 @@
----
-name: ct-linting-and-testing
+
+name: Update Index
+
 on:
   push:
-    branches:
-      - '*'
-      - '!main'
-  pull_request:
-    types: ['opened', 'synchronize', 'closed']
-    branches:
-    - main
+    branches: [ main ]
+    paths:
+      - '**.tgz'
 
 jobs:
-  directories: # Job that list subdirectories
-    runs-on: ubuntu-latest
-    outputs:
-      dir: ${{ steps.set-dirs.outputs.dir }} # generate output name dir by using inner step output
+  build:
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - id: set-dirs # Give it an id to handle to get step outputs in the outputs key above
-        run: echo "::set-output name=dir::$(ls -d */ | jq -R -s -c 'split("\n")[:-1]')"
-        # Define step output named dir base on ls command transformed to JSON thanks to jq
-  loop:
-    runs-on: ubuntu-latest
-    needs: [directories] # Depends on previous job
-    strategy:
-      matrix:
-        dir: ${{fromJson(needs.directories.outputs.dir)}} # List matrix strategy from directories dynamically
-    steps:
-      - run: echo ${{matrix.dir}}
-
-  chart-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
+      - name: Git Checkout
         uses: actions/checkout@v2
+      - name: Helm Installation
+        uses: azure/setup-helm@v1.1
         with:
-          fetch-depth: 0
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v1
-        with:
-          version: v3.6.3
-
-      - name: Set up python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-
-      - name: Setup Chart Linting
-        id: lint
-        uses: helm/chart-testing-action@v2.2.0
-
-      - name: List changed charts
-        id: list-changed
+          version: v3.7.0
+      - name: Update Index
         run: |
-          ## If executed with debug this won't work anymore.
-          changed=$(ct --config ./.github/configs/ct-lint.yaml list-changed)
-          charts=$(echo "$changed" | tr '\n' ' ' | xargs)
-          if [[ -n "$changed" ]]; then
-            echo "::set-output name=changed::true"
-            echo "::set-output name=changed_charts::$charts"
-          fi
+          helm repo index .
+          git config --global user.email "yourbot@yourorg.com"
+          git config --global user.name "YourOrg Bot"
+          git add index.yaml
+          git commit -m "Update chart index"
+          git push
 
-      - name: Run chart-testing (lint)
-        run: ct lint --debug --config ./.github/configs/ct-lint.yaml --lint-conf ./.github/configs/lintconf.yaml
 
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.2.0
-        if: steps.list-changed.outputs.changed == 'true'
 
-      - name: Run chart-testing (install)
-        run: ct install --config ./.github/configs/ct-lint.yaml
-        if: steps.list-changed.outputs.changed == 'true'
+# ---
+# name: Lint & Package Helm charts
+# on:
+#   push:
+#     branches:
+#       - '*'
+#       - '!main'
+#       - '!repo'
+#   pull_request:
+#     types: ['opened', 'synchronize', 'closed']
+#     branches:
+#       - main
+
+# env:
+#   package: github.event.action == 'closed' || github.event_name == 'push'
+#   DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+# jobs:
+#   lint:
+#     name: Lint helm charts
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+       
+#       - uses: azure/setup-helm@v3
+#         with:
+#           token: ${{secrets.GITHUB_TOKEN}}
+
+#       - name: Lint Charts
+#         run: |
+#           helm lint charts/*
+#       - name: Upload Artifact
+#         if: env.package
+#         id: upload
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: charts
+#           path: charts
+#           retention-days: 1
+#           if-no-files-found: error
+
+#   package:
+#     needs:
+#       - lint
+#     if: github.event.action == 'closed' || github.event_name == 'push'
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#         with:
+#           ref: 'repo'
+#       - name: specify branch
+#         if: github.event.action != 'closed'
+#         run: |
+#           branch_name="${GITHUB_REF_NAME}-repo"
+#           git fetch origin "$branch_name" || true
+#           git checkout "$branch_name" || git checkout -b "$branch_name"
+#           echo "branch_name=$branch_name" >> "$GITHUB_ENV"
+#       - name: Download workflow artifacts
+#         id: artifacts
+#         uses: actions/download-artifact@v3
+#         with:
+#           name: charts
+#           path: charts
+#       - uses: azure/setup-helm@v3
+#         with:
+#           token: ${{secrets.GITHUB_TOKEN}}
+#       - name: Sync Helm Repo
+#         run: |
+#           helm package charts/*
+#           helm repo index .
+#           rm -rf charts
+#       - name: Push helm packages to Repo
+#         run: |
+
+#           git config user.email "devops@caregility"
+#           git config user.name "caregility-devops"
+#           git add -A
+#           git diff --quiet && git diff --staged --quiet || git commit -m "Update repo" -m "${{ github.event.head_commit.message }}"
+#           [[ "$DEBUG" == true ]] && git diff origin/repo
+#           [[ -n "$branch_name" ]] && upstream="--set-upstream origin $branch_name"
+#           # shellcheck disable=SC2046 # Intended splitting of string
+#           git push $upstream
+
+
+  # chart-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Set up Helm
+  #       uses: azure/setup-helm@v1
+  #       with:
+  #         version: v3.6.3
+
+  #     - name: Set up python
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: 3.7
+
+  #     - name: Setup Chart Linting
+  #       id: lint
+  #       uses: helm/chart-testing-action@v2.2.0
+
+  #     - name: List changed charts
+  #       id: list-changed
+  #       run: |
+  #         ## If executed with debug this won't work anymore.
+  #         changed=$(ct --config ./.github/configs/ct-lint.yaml list-changed)
+  #         charts=$(echo "$changed" | tr '\n' ' ' | xargs)
+  #         if [[ -n "$changed" ]]; then
+  #           echo "::set-output name=changed::true"
+  #           echo "::set-output name=changed_charts::$charts"
+  #         fi
+
+  #     - name: Run chart-testing (lint)
+  #       run: ct lint --debug --config ./.github/configs/ct-lint.yaml --lint-conf ./.github/configs/lintconf.yaml
+
+  #     - name: Create kind cluster
+  #       uses: helm/kind-action@v1.2.0
+  #       if: steps.list-changed.outputs.changed == 'true'
+
+  #     - name: Run chart-testing (install)
+  #       run: ct install --dry-run --debug --config ./.github/configs/ct-lint.yaml
+  #       if: steps.list-changed.outputs.changed == 'true'
